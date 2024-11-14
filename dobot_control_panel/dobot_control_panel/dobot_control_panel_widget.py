@@ -81,26 +81,31 @@ class DobotControlPanel(QWidget):
             self.RAIL_IN_USE = False
             self.CurrentPositionRail.setText(str("X"))
 
+        self.cooldown_period = 500
+        self.cooldown_timer = QTimer()
+        self.cooldown_timer.setSingleShot(True)
+        self.cooldown_timer.timeout.connect(self.enable_buttons)
+
         # Control Tab
-        self.JT1Plus.pressed.connect(lambda:self.JT1_move(self.JT1Plus))
-        self.JT1Plus.released.connect(self.JT_IDLE)
-        self.JT1Minus.pressed.connect(lambda:self.JT1_move(self.JT1Minus))
-        self.JT1Minus.released.connect(self.JT_IDLE)
-        
-        self.JT2Plus.pressed.connect(lambda:self.JT2_move(self.JT2Plus))
-        self.JT2Plus.released.connect(self.JT_IDLE)
-        self.JT2Minus.pressed.connect(lambda:self.JT2_move(self.JT2Minus))
-        self.JT2Minus.released.connect(self.JT_IDLE)
+        self.JT1Plus.pressed.connect(lambda: self.on_button_press(self.JT1_move, self.JT1Plus))
+        self.JT1Plus.released.connect(lambda: self.on_button_release())
+        self.JT1Minus.pressed.connect(lambda: self.on_button_press(self.JT1_move, self.JT1Minus))
+        self.JT1Minus.released.connect(lambda: self.on_button_release())
 
-        self.JT3Plus.pressed.connect(lambda:self.JT3_move(self.JT3Plus))
-        self.JT3Plus.released.connect(self.JT_IDLE)
-        self.JT3Minus.pressed.connect(lambda:self.JT3_move(self.JT3Minus))
-        self.JT3Minus.released.connect(self.JT_IDLE)
+        self.JT2Plus.pressed.connect(lambda: self.on_button_press(self.JT2_move, self.JT2Plus))
+        self.JT2Plus.released.connect(lambda: self.on_button_release())
+        self.JT2Minus.pressed.connect(lambda: self.on_button_press(self.JT2_move, self.JT2Minus))
+        self.JT2Minus.released.connect(lambda: self.on_button_release())
 
-        self.JT4Plus.pressed.connect(lambda:self.JT4_move(self.JT4Plus))
-        self.JT4Plus.released.connect(self.JT_IDLE)
-        self.JT4Minus.pressed.connect(lambda:self.JT4_move(self.JT4Minus))
-        self.JT4Minus.released.connect(self.JT_IDLE)
+        self.JT3Plus.pressed.connect(lambda: self.on_button_press(self.JT3_move, self.JT3Plus))
+        self.JT3Plus.released.connect(lambda: self.on_button_release())
+        self.JT3Minus.pressed.connect(lambda: self.on_button_press(self.JT3_move, self.JT3Minus))
+        self.JT3Minus.released.connect(lambda: self.on_button_release())
+
+        self.JT4Plus.pressed.connect(lambda: self.on_button_press(self.JT4_move, self.JT4Plus))
+        self.JT4Plus.released.connect(lambda: self.on_button_release())
+        self.JT4Minus.pressed.connect(lambda: self.on_button_press(self.JT4_move, self.JT4Minus))
+        self.JT4Minus.released.connect(lambda: self.on_button_release())
 
         self.HomingButton.clicked.connect(self.button_clicked_HomingButton)
         self.EStopButton.clicked.connect(self.button_clicked_EStopButton)
@@ -162,6 +167,33 @@ class DobotControlPanel(QWidget):
         bot.set_jog_coordinate_params([100, 100, 100, 100], [100, 100, 100, 100])
 
 
+
+    # Button spam blocking
+    def on_button_press(self, move_function, button):
+        if button.isEnabled():
+            move_function(button)
+            self.disable_other_buttons(button)
+
+    def on_button_release(self):
+        self.JT_IDLE()
+        self.cooldown_timer.start(self.cooldown_period)
+
+    def disable_other_buttons(self, active_button):
+        buttons = [self.JT1Plus, self.JT1Minus, self.JT2Plus, self.JT2Minus,
+                   self.JT3Plus, self.JT3Minus, self.JT4Plus, self.JT4Minus]
+        for button in buttons:
+            if button != active_button:
+                button.setEnabled(False)
+
+    def enable_buttons(self):
+        self.JT1Plus.setEnabled(True)
+        self.JT1Minus.setEnabled(True)
+        self.JT2Plus.setEnabled(True)
+        self.JT2Minus.setEnabled(True)
+        self.JT3Plus.setEnabled(True)
+        self.JT3Minus.setEnabled(True)
+        self.JT4Plus.setEnabled(True)
+        self.JT4Minus.setEnabled(True)
 
 
     def tcp_position_callback(self, msg):

@@ -125,7 +125,7 @@ class PoseValidatorService(Node):
 
         # Target expressed in joint coordinates
         if target_type == 4:
-            in_limit = self.are_angles_in_range(angles)
+            in_limit = self.are_angles_in_range(target)
             if in_limit == False:
                 return (False, 'Joint limits violated')
             # is_trajectory_safe = self.collision_server.validate_trajectory(motion_type = target_type, current_pose = self.dobot_pose, target_point = target, detect_ground = self.prevent_collision_with_ground)
