@@ -1,53 +1,40 @@
 import serial
 import serial.tools.list_ports
-import threading
 import sys
+from filelock import FileLock
 
 from dobot_driver.message import Message
 
 class Interface:
     def __init__(self):
-        threading.Thread.__init__(self)
-        self.lock = threading.Lock()
+        self.lockfile = "/tmp/port.lock"
 
-        try:
-            magician_port = None
-            for port in serial.tools.list_ports.comports():
-                if port.manufacturer == 'Silicon Labs':
-                    magician_port = port.device
-
-            self.serial = serial.Serial(
-                port=magician_port,
-                baudrate=115200,
-                parity=serial.PARITY_NONE,
-                stopbits=serial.STOPBITS_ONE,
-                bytesize=serial.EIGHTBITS
-            )
-        except:
+        magician_port = None
+        ports = [port.device for port in serial.tools.list_ports.comports() if port.manufacturer == 'Silicon Labs']
+        if ports:
+            magician_port = ports[0]
+        else:
             print("[WARN] Dobot Magician is not connected.")
             sys.exit(1)
 
+        self.serial = serial.Serial(
+            port=magician_port,
+            baudrate=115200,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS
+        )
 
     def send(self, message):
-        self.lock.acquire()
-        if self.serial.out_waiting != 0:
-            self.serial.reset_output_buffer()
-        self.serial.write(message.package())
-        self.serial.flush()
-        response = Message.read(self.serial)
-        self.lock.release()
-        if response is None:
-            pass
-        else:
-            return response.params
+        with FileLock(self.lockfile, timeout=10):
+            self.serial.write(message.package())
+            response = Message.read(self.serial)
+        return response.params
 
     def send_only(self, message):
-        self.lock.acquire()
-        if self.serial.out_waiting != 0:
-            self.serial.reset_output_buffer()
-        self.serial.write(message.package())
-        self.serial.flush()
-        self.lock.release()
+        with FileLock(self.lockfile, timeout=10):
+            self.serial.write(message.package())
+            Message.read(self.serial)
 
     def connected(self):
         return self.serial.is_open

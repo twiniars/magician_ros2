@@ -81,10 +81,10 @@ class DobotControlPanel(QWidget):
             self.RAIL_IN_USE = False
             self.CurrentPositionRail.setText(str("X"))
 
-        self.cooldown_period = 500
-        self.cooldown_timer = QTimer()
-        self.cooldown_timer.setSingleShot(True)
-        self.cooldown_timer.timeout.connect(self.enable_buttons)
+        # For re-enabling the buttons after idle jog command
+        self.previous_joint_states = None
+        self.button_released = False
+        self.joint_stability_threshold = 1.0
 
         # Control Tab
         self.JT1Plus.pressed.connect(lambda: self.on_button_press(self.JT1_move, self.JT1Plus))
@@ -170,13 +170,12 @@ class DobotControlPanel(QWidget):
 
     # Button spam blocking
     def on_button_press(self, move_function, button):
-        if button.isEnabled():
-            move_function(button)
-            self.disable_other_buttons(button)
+        move_function(button)
+        self.disable_other_buttons(button)
 
     def on_button_release(self):
+        self.button_released = True
         self.JT_IDLE()
-        self.cooldown_timer.start(self.cooldown_period)
 
     def disable_other_buttons(self, active_button):
         buttons = [self.JT1Plus, self.JT1Minus, self.JT2Plus, self.JT2Minus,
@@ -204,11 +203,24 @@ class DobotControlPanel(QWidget):
 
 
     def joints_positions_callback(self, msg):
-        self.dobot_current_joint_states = [math.degrees(msg.position[0]), math.degrees(msg.position[1]), math.degrees(msg.position[2]), math.degrees(msg.position[3])]
-        self.JT1LCD.setText(str(round((math.degrees(msg.position[0])), 3)))
-        self.JT2LCD.setText(str(round((math.degrees(msg.position[1])), 3)))
-        self.JT3LCD.setText(str(round((math.degrees(msg.position[2])), 3)))
-        self.JT4LCD.setText(str(round((math.degrees(msg.position[3])), 3)))
+        current_joint_states = [math.degrees(msg.position[0]),
+                                math.degrees(msg.position[1]),
+                                math.degrees(msg.position[2]),
+                                math.degrees(msg.position[3])]
+
+        self.JT1LCD.setText(str(round(current_joint_states[0], 3)))
+        self.JT2LCD.setText(str(round(current_joint_states[1], 3)))
+        self.JT3LCD.setText(str(round(current_joint_states[2], 3)))
+        self.JT4LCD.setText(str(round(current_joint_states[3], 3)))
+
+        if self.button_released:
+            differences = [abs(current_joint_states[i] - self.previous_joint_states[i]) for i in range(len(current_joint_states))]
+            print('differences: ',differences)
+            if all(diff < self.joint_stability_threshold for diff in differences):
+                self.button_released = False
+                self.enable_buttons()
+        self.previous_joint_states = current_joint_states
+
 
     def rail_pose_callback(self, msg):
         self.rail_pose = msg.data
