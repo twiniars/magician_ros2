@@ -215,7 +215,6 @@ class DobotControlPanel(QWidget):
 
         if self.button_released:
             differences = [abs(current_joint_states[i] - self.previous_joint_states[i]) for i in range(len(current_joint_states))]
-            print('differences: ',differences)
             if all(diff < self.joint_stability_threshold for diff in differences):
                 self.button_released = False
                 self.enable_buttons()
