@@ -107,18 +107,33 @@ class PoseValidatorService(Node):
 
 
     def are_angles_in_range(self, angles):
-            if (self.axis_1_range["min"] < angles[0] < self.axis_1_range["max"]) and \
-            (self.axis_2_range["min"] < angles[1] < self.axis_2_range["max"]) and \
-            (self.axis_3_range["min"] < angles[2] < self.axis_3_range["max"]) and \
-            (self.axis_4_range["min"] < angles[3] < self.axis_4_range["max"]):
-                axis_3_parallelogram_limit_min = max(angles[1] - 55, -15)
-                axis_3_parallelogram_limit_max = min(angles[1] + 70, 90)
-                axis_4_rotated_limit_min = angles[0] - 150
-                axis_4_rotated_limit_max = angles[0] + 150
-                if (axis_3_parallelogram_limit_min < angles[2] < axis_3_parallelogram_limit_max) and \
-                (axis_4_rotated_limit_min < angles[3] < axis_4_rotated_limit_max):
-                    return True
-            return False
+        if \
+        (self.axis_1_range["min"] < angles[0] < self.axis_1_range["max"]) and \
+        (self.axis_2_range["min"] < angles[1] < self.axis_2_range["max"]) and \
+        (self.axis_3_range["min"] < angles[2] < self.axis_3_range["max"]) and \
+        (self.axis_4_range["min"] < angles[3] < self.axis_4_range["max"]):
+            axis_3_parallelogram_limit_min = max(angles[1] - 55, -15)
+            axis_3_parallelogram_limit_max = min(angles[1] + 70, 90)
+            if \
+            axis_3_parallelogram_limit_min < angles[2] < axis_3_parallelogram_limit_max:
+                return True
+        return False
+
+    def are_angles_in_range_cartesian(self, angles):
+        if \
+        (self.axis_1_range["min"] < angles[0] < self.axis_1_range["max"]) and \
+        (self.axis_2_range["min"] < angles[1] < self.axis_2_range["max"]) and \
+        (self.axis_3_range["min"] < angles[2] < self.axis_3_range["max"]) and \
+        (self.axis_4_range["min"] < angles[3] < self.axis_4_range["max"]):
+            axis_3_parallelogram_limit_min = max(angles[1] - 55, -15)
+            axis_3_parallelogram_limit_max = min(angles[1] + 70, 90)
+            axis_4_rotated_limit_min = angles[0] - 150
+            axis_4_rotated_limit_max = angles[0] + 150
+            if \
+            (axis_3_parallelogram_limit_min < angles[2] < axis_3_parallelogram_limit_max) and \
+            (axis_4_rotated_limit_min < angles[3] < axis_4_rotated_limit_max):
+                return True
+        return False
 
 
     def is_target_valid(self, target, target_type):
@@ -131,15 +146,14 @@ class PoseValidatorService(Node):
             # is_trajectory_safe = self.collision_server.validate_trajectory(motion_type = target_type, current_pose = self.dobot_pose, target_point = target, detect_ground = self.prevent_collision_with_ground)
             # if is_trajectory_safe == False:
             #     return (False, 'A collision was detected during trajectory validation. The movement cannot be executed.')
-            else:
-                return (True, 'Trajectory is safe and feasible.')
+            # else:
+            return (True, 'Trajectory is safe and feasible.')
             
         elif target_type == 5:
             xyz = target.tolist()
             cartesian_target = calc_FwdKin(xyz[0], xyz[1], xyz[2])
             cartesian_target_point = [float(cartesian_target[0]), float(cartesian_target[1]), float(cartesian_target[2])]
             waypoints = self.collision_server.linear_trajecory_to_discrete_waypoints(self.dobot_pose, cartesian_target_point)
-            cartesian_target_list = [float(cartesian_target[0]), float(cartesian_target[1]), float(cartesian_target[2]), xyz[3]]
             for point in waypoints:
                 end_tool_rotation = target.tolist()[3]
                 point.append(end_tool_rotation)
@@ -152,8 +166,8 @@ class PoseValidatorService(Node):
             # is_trajectory_safe = self.collision_server.validate_trajectory(motion_type = target_type, current_pose = self.dobot_pose, target_point = cartesian_target_list, detect_ground = self.prevent_collision_with_ground)
             # if is_trajectory_safe == False:
             #     return (False, 'A collision was detected during trajectory validation. The movement cannot be executed.')
-            else:
-                return (True, 'Trajectory is safe and feasible.')
+            # else:
+            return (True, 'Trajectory is safe and feasible.')
 
 
         # Target expressed in cartesian coordinates
@@ -161,14 +175,14 @@ class PoseValidatorService(Node):
             angles = calc_inv_kin(*target)
             if angles == False:
                 return (False, 'Inv Kin solving error!')
-            in_limit = self.are_angles_in_range(angles)
+            in_limit = self.are_angles_in_range_cartesian(angles)
             if in_limit == False:
                 return (False, 'Joint limits violated')
             # is_trajectory_safe = self.collision_server.validate_trajectory(motion_type = target_type, current_pose = self.dobot_pose, target_point = target, detect_ground = self.prevent_collision_with_ground)
             # if is_trajectory_safe == False:
             #     return (False, 'A collision was detected during trajectory validation. The movement cannot be executed.')
-            else:
-                return (True, 'Trajectory is safe and feasible.')
+            # else:
+            return (True, 'Trajectory is safe and feasible.')
 
 
         elif target_type == 2:
@@ -179,7 +193,7 @@ class PoseValidatorService(Node):
                 angles = calc_inv_kin(*point)
                 if angles == False:
                     return (False, 'Inv Kin solving error!')
-                in_limit = self.are_angles_in_range(angles)
+                in_limit = self.are_angles_in_range_cartesian(angles)
                 if in_limit == False:
                     return (False, 'Joint limits violated')
             # is_trajectory_safe = self.collision_server.validate_trajectory(motion_type = target_type, current_pose = self.dobot_pose, target_point = target, detect_ground = self.prevent_collision_with_ground)
