@@ -32,8 +32,8 @@ class PoseValidatorService(Node):
         self.max_velocity = 115 #TODO [mm/s]
         self.axis_1_range = {"min": -125, "max": 125}
         self.axis_2_range = {"min": -5, "max": 90}
-        self.axis_3_range = {"min": -15, "max": 90} # Actually -15 to 90 is possible
-        self.axis_4_range = {"min": -180, "max": 180} # Actually -180 to 180 is possible
+        self.axis_3_range = {"min": -15, "max": 90}
+        self.axis_4_range = {"min": -180, "max": 180}
 
         self.path_to_collision_model = None
 
@@ -114,8 +114,11 @@ class PoseValidatorService(Node):
         (self.axis_4_range["min"] < angles[3] < self.axis_4_range["max"]):
             axis_3_parallelogram_limit_min = max(angles[1] - 55, -15)
             axis_3_parallelogram_limit_max = min(angles[1] + 70, 90)
+            # axis_3_pneumatic_piston_limit_max = 0.75 * angles[1] + 43.75
+            axis_3_gripper_limit_max = 0.778 * angles[1] + 58.89
             if \
-            axis_3_parallelogram_limit_min < angles[2] < axis_3_parallelogram_limit_max:
+            (axis_3_parallelogram_limit_min < angles[2] < axis_3_parallelogram_limit_max) and \
+            (angles[2] < axis_3_gripper_limit_max):
                 return True
         return False
 
@@ -127,10 +130,13 @@ class PoseValidatorService(Node):
         (self.axis_4_range["min"] < angles[3] < self.axis_4_range["max"]):
             axis_3_parallelogram_limit_min = max(angles[1] - 55, -15)
             axis_3_parallelogram_limit_max = min(angles[1] + 70, 90)
+            # axis_3_pneumatic_piston_limit_max = 0.75 * angles[1] + 43.75
+            axis_3_gripper_limit_max = 0.778 * angles[1] + 58.89
             axis_4_rotated_limit_min = angles[0] - 150
             axis_4_rotated_limit_max = angles[0] + 150
             if \
             (axis_3_parallelogram_limit_min < angles[2] < axis_3_parallelogram_limit_max) and \
+            (angles[2] < axis_3_gripper_limit_max) and \
             (axis_4_rotated_limit_min < angles[3] < axis_4_rotated_limit_max):
                 return True
         return False
