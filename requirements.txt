@@ -3,7 +3,6 @@ pybullet==3.2.6
 PyQt5==5.15.10
 pyserial==3.5
 pytest==7.4.4
-python_qt_binding==2.2.1
 setuptools==68.1.2
 transforms3d==0.4.1
 pyudev==0.24.0
