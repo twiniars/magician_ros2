@@ -64,6 +64,8 @@ class SlidingRailPTPServer(Node):
         bot.set_sliding_rail_status(1,1)
         self.add_on_set_parameters_callback(self.parameters_callback)
 
+        self._is_executing = False
+
     def parameters_callback(self, params):
         for param in params:
             if param.name == 'rail_vel' and param.type_ == Parameter.Type.INTEGER:
@@ -103,6 +105,12 @@ class SlidingRailPTPServer(Node):
 
     def goal_callback(self, goal_request):
         """Accept or reject a client request to begin an action."""
+
+        # Reject new goal if another is being processed
+        if self._is_executing:
+            self.get_logger().warn("Goal rejected because another goal is already being processed")
+            return GoalResponse.REJECT
+
         self.target = goal_request.target_pose
 
         # Check if there are active alarms (if the LED diode lights up red) 
@@ -123,6 +131,7 @@ class SlidingRailPTPServer(Node):
 
         self.get_logger().info('Goal: {0}'.format(self.target))
         self.get_logger().info('Received goal request')
+        self._is_executing = True
         return GoalResponse.ACCEPT 
 
 
@@ -169,6 +178,7 @@ class SlidingRailPTPServer(Node):
                 bot.start_queue()
                 self.get_logger().info('Goal canceled')
                 result.achieved_pose  = self.rail_pose
+                self._is_executing = False
                 return result
 
 
@@ -191,6 +201,8 @@ class SlidingRailPTPServer(Node):
         result.achieved_pose  = self.rail_pose
 
         self.get_logger().info('Returning result: {0}'.format(result.achieved_pose))
+
+        self._is_executing = False
 
         return result
 
