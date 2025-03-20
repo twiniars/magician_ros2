@@ -226,24 +226,29 @@ class DobotPTPServer(Node):
             self.get_logger().warn("Goal rejected because another goal is already being processed")
             return GoalResponse.REJECT
 
+        self._is_executing = True
+
         self.target = goal_request.target_pose
         self.motion_type = goal_request.motion_type
 
         # Check for active alarms
         if self.active_alarms:
             self.get_logger().warn("Goal rejected because of active alarms (LED diode in the robot base lights up red)")
+            self._is_executing = False
             return GoalResponse.REJECT
 
         # Check if homing is finished
         homing_status_response = self.send_request_homing_status()
         if homing_status_response.values[0].string_value != 'finished':
             self.get_logger().warn("Goal rejected because homing has not been performed")
+            self._is_executing = False
             return GoalResponse.REJECT
 
         # Validate trajectory
         validation_response = self.send_request_check_trajectory(self.target, self.motion_type)
         if not validation_response.is_valid:
             self.get_logger().warn("Goal rejected: {0}".format(validation_response))
+            self._is_executing = False
             return GoalResponse.REJECT
 
         self.get_logger().info("Result of calling validation service: is valid? {0}, description: {1}".format(validation_response.is_valid, validation_response.message))
@@ -257,6 +262,7 @@ class DobotPTPServer(Node):
             bot.set_point_to_point_common_params(vel_ratio, acc_ratio)
         else:
             self.get_logger().info('Wrong ratio in action goal field')
+            self._is_executing = False
             return GoalResponse.REJECT
 
         # Wait for mode acknowledgment
@@ -268,10 +274,10 @@ class DobotPTPServer(Node):
         self.get_logger().info('Received goal request')
 
         if self.motion_type in self.motion_types_list:
-            self._is_executing = True
             return GoalResponse.ACCEPT
         else:
             self.get_logger().info('The motion mode you specified does not exist!')
+        self._is_executing = False
         return GoalResponse.REJECT
 
 
