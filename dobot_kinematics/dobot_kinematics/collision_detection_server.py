@@ -89,25 +89,21 @@ class PyBulletCollisionServer():
 
 
     @staticmethod
-    def linear_trajecory_to_discrete_waypoints(start, target, step_len = 0.5):
+    def linear_trajecory_to_discrete_waypoints(start, target, step_len=0.5):
         waypoints = []
 
-        x, y, z = [start[0], target[0]], [start[1], target[1]], [start[2], target[2]]
+        x, y, z = start[0], start[1], start[2]
+        dx, dy, dz = target[0] - x, target[1] - y, target[2] - z
+        total_dist = math.dist(start, target)
 
-        steps_num = 1
-        while True:
-            dist_now = math.dist([x[0], y[0], z[0]], [x[0] + (x[1]-x[0])*(1/steps_num), y[0] + (y[1]-y[0])*(1/steps_num), z[0] + (z[1]-z[0])*(1/steps_num)])
-            dist_next = math.dist([x[0], y[0], z[0]], [x[0] + (x[1]-x[0])*(1/(steps_num+1)), y[0] + (y[1]-y[0])*(1/(steps_num+1)), z[0] + (z[1]-z[0])*(1/(steps_num+1))])
+        if total_dist == 0:
+            return [start]
 
-            if dist_now > step_len and dist_next < step_len:
-                steps_num = steps_num + 3
-                break
-            else:
-                steps_num = steps_num + 1
+        steps_num = max(2, math.ceil(total_dist / step_len))
 
-        for t in range(steps_num-1):
-            t =t / (steps_num-2)
-            waypoints.append([x[0] + (x[1]-x[0])*t, y[0] + (y[1]-y[0])*t, z[0] + (z[1]-z[0])*t])
+        for t in range(steps_num):
+            t_scaled = t / (steps_num - 1)
+            waypoints.append([x + dx * t_scaled, y + dy * t_scaled, z + dz * t_scaled])
 
         return waypoints
 
