@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, subprocess
 import serial.tools.list_ports
 from launch import LaunchDescription
 from launch_ros.actions import Node
@@ -23,6 +23,25 @@ def generate_launch_description():
 
     if os.environ['MAGICIAN_USB_DEVICE_PATH'] == 'none':
         sys.exit("Dobot is disconnected! Check if the USB cable and power adapter are plugged in.")
+    # ----------------------------------------------------------------script-------------------------------------------------
+
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Check if another instance of dobot_bringup is already running
+    script_name = os.path.basename(__file__)
+    cmd = f"ps aux | grep '{script_name}' | grep -v grep | grep -v {os.getpid()}"
+
+    result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    if result.stdout.strip():  # If output is not empty, another instance is running
+        print("Another instance of dobot_bringup is already running. Do NOT use ctrl+Z inside the terminal with dobot_bringup launched.")
+        print("If you want to kill the previous process, follow the steps below:")
+        print("1. Run the following command to find the process ID of the running script: ps aux | grep dobot_bringup | grep -v grep")
+        print("   The second column is the Process ID (PID).")
+        print("2. Once you have the PID, use the kill command to terminate it: kill -9 <PID_of_dobot_bringup>")
+        print("   Now, another instance of dobot_bringup can be launched again.")
+        print("Exiting...")
+        sys.exit(1)
     # -----------------------------------------------------------------------------------------------------------------
 
 
